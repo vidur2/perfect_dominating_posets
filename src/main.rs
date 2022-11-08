@@ -20,7 +20,12 @@ fn main() {
             let file_str = String::from_utf8(buf[0..size].to_vec()).unwrap();
             let upsets_downsets = parse_buff(file_str);
             let interval = Interval::new(upsets_downsets);
-            println!("{:?}", interval.color());
+
+            if let Ok(interval) = interval {
+                println!("{:?}", interval.color());
+            } else {
+                println!("ColoringError: Copy of 2+2 found in graph")
+            }
         } else {
             println!("Error: Please enter a valid path")
         }

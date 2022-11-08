@@ -44,8 +44,12 @@ struct UpDownUnshared {
     downset: UnsharedSet
 }
 
+pub enum ColoringError {
+    TwoPlusTwoFound
+}
+
 impl Interval {
-    pub fn new(map: HashMap<u8, UpDown>) -> Self {
+    pub fn new(map: HashMap<u8, UpDown>) -> Result<Self, ColoringError> {
         let mut upset_vec: HashSet<UnsharedSet> = HashSet::new();
         let mut downset_vec: HashSet<UnsharedSet> = HashSet::new();
         let mut unshared_map: HashMap<u8, UpDownUnshared> = HashMap::new();
@@ -64,8 +68,13 @@ impl Interval {
 
         let mut upset_vec: Vec<UnsharedSet> = upset_vec.into_iter().collect();
         let mut downset_vec: Vec<UnsharedSet> = downset_vec.into_iter().collect();
-        upset_vec.sort_by(|a, b| a.0.len().cmp(&b.0.len()));
-        downset_vec.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
+        
+        if upset_vec.len() != downset_vec.len() {
+            return Err(ColoringError::TwoPlusTwoFound);
+        }
+
+        upset_vec.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
+        downset_vec.sort_by(|a, b| a.0.len().cmp(&b.0.len()));
 
         let mut upset_map: HashMap<UnsharedSet, u8> = HashMap::new();
         let mut downset_map: HashMap<UnsharedSet, u8> = HashMap::new();
@@ -79,18 +88,17 @@ impl Interval {
         }
 
         let mut interval: Vec<Node> = Vec::new();
-
-        for (id, UpDown { upset, downset }) in map.iter() {
+        for (id, UpDownUnshared { upset, downset }) in unshared_map.iter() {
             interval.push(Node {
                 id: *id,
-                lower: *downset_map.get(&UnsharedSet::from_set(downset.clone())).unwrap(),
-                upper: *upset_map.get(&UnsharedSet::from_set(upset.clone())).unwrap(),
+                lower: *downset_map.get(&downset).unwrap(),
+                upper: *upset_map.get(&upset).unwrap(),
             })
         }
 
-        return Self {
+        return Ok(Self {
             interval
-        }
+        })
     }
 
     pub fn color(&self) -> HashMap<u8, Vec<u8>> {
@@ -106,7 +114,6 @@ impl Interval {
                 if idx >= &node.lower {
                     curr_color += 1;
                 } else {
-                    color_map.insert(curr_color, node.upper);
                     break;
                 }
             }
@@ -116,6 +123,8 @@ impl Interval {
             } else {
                 coloring.insert(curr_color, vec![node.id]);
             }
+
+            color_map.insert(curr_color, node.upper);
         }
 
         return coloring;
