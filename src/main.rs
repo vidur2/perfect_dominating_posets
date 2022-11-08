@@ -18,7 +18,7 @@ fn main() {
             let mut buf = [0u8; 1024];
             let size = content.read(&mut buf).unwrap();
             let file_str = String::from_utf8(buf[0..size].to_vec()).unwrap();
-            let upsets_downsets = parse_buff(file_str);
+            let (upsets_downsets, topology_list) = parse_buff(file_str);
             let interval = Interval::new(upsets_downsets);
 
             if let Ok(interval) = interval {

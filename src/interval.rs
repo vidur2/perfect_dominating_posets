@@ -1,4 +1,4 @@
-use std::{collections::HashMap, collections::HashSet};
+use std::{collections::HashMap, collections::HashSet, cmp::Ordering};
 
 use crate::preprocessing::{UpDown, Set, VecInner};
 
@@ -104,7 +104,15 @@ impl Interval {
     pub fn color(&self) -> HashMap<u8, Vec<u8>> {
         let mut interval = self.interval.clone();
 
-        interval.sort_by(|a, b| a.lower.cmp(&b.lower));
+        interval.sort_by(|a, b| {
+            let ord = a.lower.cmp(&b.lower);
+
+            if Ordering::Equal == ord {
+                return (a.upper - a.lower).cmp(&(b.upper - b.lower))
+            } else {
+                return ord;
+            }
+        });
         let mut color_map: HashMap<u8, u8> = HashMap::new();
         let mut coloring: HashMap<u8, Vec<u8>> = HashMap::new();
 
