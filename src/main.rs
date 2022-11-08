@@ -19,7 +19,6 @@ fn main() {
             let size = content.read(&mut buf).unwrap();
             let file_str = String::from_utf8(buf[0..size].to_vec()).unwrap();
             let upsets_downsets = parse_buff(file_str);
-
             let interval = Interval::new(upsets_downsets);
             println!("{:?}", interval.color());
         } else {
