@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::{collections::HashMap, cmp::Ordering};
 use std::rc::Rc;
 
@@ -18,23 +19,27 @@ pub enum VecInner {
 #[derive(PartialEq, Eq, PartialOrd, Clone, Debug)]
 pub struct Set(pub Rc<RefCell<Vec<VecInner>>>);
 
-pub fn parse_buff(buff: String) -> (HashMap<u8, UpDown>, HashMap<u8, u8>) {
+pub fn parse_buff(buff: String) -> (HashMap<u8, UpDown>, HashMap<u8, HashSet<u8>>) {
     let mut map: HashMap<u8, UpDown> = HashMap::new();
-    let mut topology_list: HashMap<u8, u8> = HashMap::new();
+    let mut topology_list: HashMap<u8, HashSet<u8>> = HashMap::new();
 
     for edge in buff.split("\n") {
         let (v1, v2) = parse_edge(edge);
 
         if let Some(deg) = topology_list.get_mut(&v1) {
-            *deg += 1;
+            deg.insert(v2);
         } else {
-            topology_list.insert(v1, 1);
+            let mut deg = HashSet::new();
+            deg.insert(v2);
+            topology_list.insert(v1, deg);
         }
 
         if let Some(deg) = topology_list.get_mut(&v2) {
-            *deg += 1;
+            deg.insert(v1);
         } else {
-            topology_list.insert(v2, 1);
+            let mut deg = HashSet::new();
+            deg.insert(v1);
+            topology_list.insert(v2, deg);
         }
 
         if let Some(adj_list) = map.get_mut(&v1) {

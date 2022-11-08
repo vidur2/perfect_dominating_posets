@@ -1,4 +1,4 @@
-use std::{collections::HashMap, collections::HashSet, cmp::Ordering};
+use std::{collections::HashMap, collections::HashSet, cmp::Ordering, cell::RefCell, rc::Rc};
 
 use crate::preprocessing::{UpDown, Set, VecInner};
 
@@ -101,7 +101,7 @@ impl Interval {
         })
     }
 
-    pub fn color(&self) -> HashMap<u8, Vec<u8>> {
+    pub fn color(&self) -> HashMap<u8, HashSet<u8>> {
         let mut interval = self.interval.clone();
 
         interval.sort_by(|a, b| {
@@ -114,7 +114,7 @@ impl Interval {
             }
         });
         let mut color_map: HashMap<u8, u8> = HashMap::new();
-        let mut coloring: HashMap<u8, Vec<u8>> = HashMap::new();
+        let mut coloring: HashMap<u8, HashSet<u8>> = HashMap::new();
 
         for node in interval {
             let mut curr_color = 0;
@@ -127,14 +127,61 @@ impl Interval {
             }
 
             if let Some(colored_nodes) = coloring.get_mut(&curr_color) {
-                colored_nodes.push(node.id)
+                colored_nodes.insert(node.id);
             } else {
-                coloring.insert(curr_color, vec![node.id]);
+                let mut set: HashSet<u8> = HashSet::new();
+                set.insert(node.id);
+                coloring.insert(curr_color, set);
             }
 
             color_map.insert(curr_color, node.upper);
         }
 
         return coloring;
+    }
+
+    pub fn find_dominating_set(&self, deg_vec: HashMap<u8, HashSet<u8>>) -> Vec<u8> {
+        let coloring = self.color();
+        let values: Rc<RefCell<Vec<HashSet<u8>>>> = Rc::new(RefCell::new(Vec::new()));
+        let mut deg_vec = deg_vec.clone();
+
+        for val in coloring.values() {
+            values.borrow_mut().push(val.clone());
+        }
+        let mut dominating_set: Vec<u8> = Vec::new();
+
+        Rc::clone(&values).borrow_mut().sort_by(|a, b| b.len().cmp(&a.len()));
+        for val in Rc::clone(&values).borrow().iter() {
+            let mut len = 0;
+            let mut adjacents: HashSet<u8> = HashSet::new();
+            let mut node_id = u8::MAX;
+
+            for node in val.iter() {
+                let vec = deg_vec.get(node).unwrap();
+
+                if vec.len() > len {
+                    adjacents = vec.clone();
+                    len = vec.len();
+                    node_id = node.clone();
+                }
+
+            }
+
+            drop(val);
+
+            dominating_set.push(node_id);
+
+            for id in adjacents.iter() {
+                for set in Rc::clone(&values).borrow_mut().iter_mut() {
+                    set.remove(id);
+                }
+
+                for val in deg_vec.values_mut() {
+                    val.remove(id);
+                }
+            }
+        }
+
+        return dominating_set;
     }
 }

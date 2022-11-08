@@ -22,7 +22,7 @@ fn main() {
             let interval = Interval::new(upsets_downsets);
 
             if let Ok(interval) = interval {
-                println!("{:?}", interval.color());
+                println!("{:?}", interval.find_dominating_set(topology_list));
             } else {
                 println!("ColoringError: Copy of 2+2 found in graph")
             }
