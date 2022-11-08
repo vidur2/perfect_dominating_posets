@@ -18,18 +18,6 @@ pub enum VecInner {
 #[derive(PartialEq, Eq, PartialOrd, Clone, Debug)]
 pub struct Set(pub Rc<RefCell<Vec<VecInner>>>);
 
-impl Ord for Set {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        if self.0.borrow().len() > other.0.borrow().len() {
-            return Ordering::Greater
-        } else if self.0.borrow().len() < other.0.borrow().len() {
-            return Ordering::Less;
-        } else {
-            return Ordering::Equal;
-        }
-    }
-}
-
 pub fn parse_buff(buff: String) -> HashMap<u8, UpDown> {
     let mut map: HashMap<u8, UpDown> = HashMap::new();
     for edge in buff.split("\n") {
