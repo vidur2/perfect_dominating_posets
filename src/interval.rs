@@ -142,46 +142,63 @@ impl Interval {
 
     pub fn find_dominating_set(&self, deg_vec: HashMap<u8, HashSet<u8>>) -> Vec<u8> {
         let coloring = self.color();
-        let values: Rc<RefCell<Vec<HashSet<u8>>>> = Rc::new(RefCell::new(Vec::new()));
+        let mut values: Vec<HashSet<u8>> = Vec::new();
         let mut deg_vec = deg_vec.clone();
+        let mut visited: HashSet<u8> = HashSet::new();
 
         for val in coloring.values() {
-            values.borrow_mut().push(val.clone());
+            values.push(val.clone());
         }
         let mut dominating_set: Vec<u8> = Vec::new();
 
-        Rc::clone(&values).borrow_mut().sort_by(|a, b| b.len().cmp(&a.len()));
-        for val in Rc::clone(&values).borrow().iter() {
-            let mut len = 0;
-            let mut adjacents: HashSet<u8> = HashSet::new();
-            let mut node_id = u8::MAX;
+        values.sort_by(|a, b| b.len().cmp(&a.len()));
 
-            for node in val.iter() {
-                let vec = deg_vec.get(node).unwrap();
+        let deg_len = Self::check_len(&values);
 
-                if vec.len() > len {
-                    adjacents = vec.clone();
-                    len = vec.len();
-                    node_id = node.clone();
+        while visited.len() != deg_len {
+            for val in values.iter() {
+                let mut len = 0;
+                let mut adjacents: HashSet<u8> = HashSet::new();
+                let mut node_id = u8::MAX;
+    
+                for node in val.iter() {
+                    if !visited.contains(node) {
+                        let vec = deg_vec.get(node).unwrap();
+    
+                        if vec.len() > len {
+                            adjacents = vec.clone();
+                            len = vec.len();
+                            node_id = node.clone();
+                        }
+                    }
                 }
-
-            }
-
-            drop(val);
-
-            dominating_set.push(node_id);
-
-            for id in adjacents.iter() {
-                for set in Rc::clone(&values).borrow_mut().iter_mut() {
-                    set.remove(id);
+    
+                if node_id != u8::MAX {
+                    dominating_set.push(node_id);
+                    visited.insert(node_id);
                 }
-
-                for val in deg_vec.values_mut() {
-                    val.remove(id);
+    
+                for id in adjacents.iter() {
+                    visited.insert(*id);
+    
+                    for val in deg_vec.values_mut() {
+                        val.remove(id);
+                    }
                 }
+    
+                deg_vec.remove(&node_id);
             }
         }
 
         return dominating_set;
+    }
+
+    fn check_len(values: &Vec<HashSet<u8>>) -> usize {
+        let mut length = 0;
+        for val in values.iter() {
+            length += val.len();
+        }
+
+        return length;
     }
 }
