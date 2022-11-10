@@ -1,20 +1,19 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::collections::HashSet;
-use std::{collections::HashMap, cmp::Ordering};
 use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct UpDown {
     pub upset: Set,
-    pub downset: Set
+    pub downset: Set,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Clone, Debug)]
 pub enum VecInner {
     Num(u8),
-    Vec(Rc<RefCell<Vec<VecInner>>>)
+    Vec(Rc<RefCell<Vec<VecInner>>>),
 }
-
 
 #[derive(PartialEq, Eq, PartialOrd, Clone, Debug)]
 pub struct Set(pub Rc<RefCell<Vec<VecInner>>>);
@@ -45,7 +44,13 @@ pub fn parse_buff(buff: String) -> (HashMap<u8, UpDown>, HashMap<u8, HashSet<u8>
         if let Some(adj_list) = map.get_mut(&v1) {
             adj_list.upset.0.borrow_mut().push(VecInner::Num(v2));
         } else {
-            map.insert(v1, UpDown { downset: Set(Rc::new(RefCell::new(Vec::new()))), upset: Set(Rc::new(RefCell::new(vec![VecInner::Num(v2)]))) });
+            map.insert(
+                v1,
+                UpDown {
+                    downset: Set(Rc::new(RefCell::new(Vec::new()))),
+                    upset: Set(Rc::new(RefCell::new(vec![VecInner::Num(v2)]))),
+                },
+            );
         }
 
         let new_item2 = Rc::clone(&map.get(&v1).unwrap().downset.0);
@@ -54,7 +59,16 @@ pub fn parse_buff(buff: String) -> (HashMap<u8, UpDown>, HashMap<u8, HashSet<u8>
             borrow.push(VecInner::Num(v1));
             borrow.push(VecInner::Vec(new_item2));
         } else {
-            map.insert(v2, UpDown { downset: Set(Rc::new(RefCell::new(vec![VecInner::Num(v1), VecInner::Vec(new_item2)]))), upset: Set(Rc::new(RefCell::new(Vec::new()))) });
+            map.insert(
+                v2,
+                UpDown {
+                    downset: Set(Rc::new(RefCell::new(vec![
+                        VecInner::Num(v1),
+                        VecInner::Vec(new_item2),
+                    ]))),
+                    upset: Set(Rc::new(RefCell::new(Vec::new()))),
+                },
+            );
         }
 
         let new_item = Rc::clone(&map.get(&v2).unwrap().upset.0);
@@ -79,6 +93,6 @@ fn parse_edge(edge: &str) -> (u8, u8) {
         let num: u8 = num.to_string().parse().unwrap();
         out[idx] = num;
     }
-    
+
     return (out[0], out[1]);
 }

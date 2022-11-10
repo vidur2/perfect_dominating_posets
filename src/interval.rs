@@ -1,10 +1,10 @@
-use std::{collections::HashMap, collections::HashSet, cmp::Ordering, cell::RefCell, rc::Rc};
+use std::{cell::RefCell, cmp::Ordering, collections::HashMap, collections::HashSet, rc::Rc};
 
-use crate::preprocessing::{UpDown, Set, VecInner};
+use crate::preprocessing::{Set, UpDown, VecInner};
 
 #[derive(Debug)]
 pub struct Interval {
-    interval: Vec<Node>
+    interval: Vec<Node>,
 }
 
 #[derive(Clone, Debug)]
@@ -24,7 +24,7 @@ impl UnsharedSet {
             Self::inner(&mut new_set, elem);
         }
 
-        return Self(new_set)
+        return Self(new_set);
     }
 
     fn inner(new_set: &mut Vec<u8>, elem: &VecInner) {
@@ -34,18 +34,19 @@ impl UnsharedSet {
                 for elem in deepset.borrow().iter() {
                     Self::inner(new_set, elem);
                 }
-            },
+            }
         }
     }
 }
 #[derive(Debug)]
 struct UpDownUnshared {
     upset: UnsharedSet,
-    downset: UnsharedSet
+    downset: UnsharedSet,
 }
 
 pub enum ColoringError {
-    TwoPlusTwoFound
+    TwoPlusTwoFound,
+    OutsideAlgoScope
 }
 
 impl Interval {
@@ -56,19 +57,22 @@ impl Interval {
 
         for (id, set) in map.iter() {
             let unshared_upset = UnsharedSet::from_set(set.upset.clone());
-            let unshared_downset  = UnsharedSet::from_set(set.downset.clone());
+            let unshared_downset = UnsharedSet::from_set(set.downset.clone());
             upset_vec.insert(unshared_upset.clone());
             downset_vec.insert(unshared_downset.clone());
 
-            unshared_map.insert(id.clone(), UpDownUnshared {
-                upset: unshared_upset,
-                downset: unshared_downset,
-            });
+            unshared_map.insert(
+                id.clone(),
+                UpDownUnshared {
+                    upset: unshared_upset,
+                    downset: unshared_downset,
+                },
+            );
         }
 
         let mut upset_vec: Vec<UnsharedSet> = upset_vec.into_iter().collect();
         let mut downset_vec: Vec<UnsharedSet> = downset_vec.into_iter().collect();
-        
+
         if upset_vec.len() != downset_vec.len() {
             return Err(ColoringError::TwoPlusTwoFound);
         }
@@ -96,9 +100,7 @@ impl Interval {
             })
         }
 
-        return Ok(Self {
-            interval
-        })
+        return Ok(Self { interval });
     }
 
     pub fn color(&self) -> HashMap<u8, HashSet<u8>> {
@@ -108,7 +110,7 @@ impl Interval {
             let ord = a.lower.cmp(&b.lower);
 
             if Ordering::Equal == ord {
-                return (a.upper - a.lower).cmp(&(b.upper - b.lower))
+                return (a.upper - a.lower).cmp(&(b.upper - b.lower));
             } else {
                 return ord;
             }
@@ -140,7 +142,7 @@ impl Interval {
         return coloring;
     }
 
-    pub fn find_dominating_set(&self, deg_vec: HashMap<u8, HashSet<u8>>) -> Vec<u8> {
+    pub fn find_dominating_set(&self, deg_vec: HashMap<u8, HashSet<u8>>) -> Result<Vec<u8>, ColoringError>{
         let coloring = self.color();
         let mut values: Vec<HashSet<u8>> = Vec::new();
         let mut deg_vec = deg_vec.clone();
@@ -148,6 +150,10 @@ impl Interval {
 
         for val in coloring.values() {
             values.push(val.clone());
+        }
+
+        if !Self::verify_chain(&values) {
+            return Err(ColoringError::OutsideAlgoScope);
         }
         let mut dominating_set: Vec<u8> = Vec::new();
 
@@ -160,11 +166,11 @@ impl Interval {
                 let mut len = 0;
                 let mut adjacents: HashSet<u8> = HashSet::new();
                 let mut node_id = u8::MAX;
-    
+
                 for node in val.iter() {
                     if !visited.contains(node) {
                         let vec = deg_vec.get(node).unwrap();
-    
+
                         if vec.len() > len {
                             adjacents = vec.clone();
                             len = vec.len();
@@ -172,12 +178,12 @@ impl Interval {
                         }
                     }
                 }
-    
+
                 if node_id != u8::MAX {
                     dominating_set.push(node_id);
                     visited.insert(node_id);
                 }
-    
+
                 for id in adjacents.iter() {
                     visited.insert(*id);
                     let adj_adj = deg_vec.get(&id).unwrap();
@@ -190,12 +196,12 @@ impl Interval {
                         val.remove(id);
                     }
                 }
-    
+
                 deg_vec.remove(&node_id);
             }
         }
 
-        return dominating_set;
+        return Ok(dominating_set);
     }
 
     fn check_len(values: &Vec<HashSet<u8>>) -> usize {
@@ -205,5 +211,15 @@ impl Interval {
         }
 
         return length;
+    }
+
+    fn verify_chain(values: &Vec<HashSet<u8>>) -> bool {
+        for val in values {
+            if val.len() != 1 && val.len() < 5 {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
