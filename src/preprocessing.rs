@@ -3,28 +3,39 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::rc::Rc;
 
+
+// Stores upsets and downsets
 #[derive(Debug)]
 pub struct UpDown {
     pub upset: Set,
     pub downset: Set,
 }
 
+// Insert shared memory into Set Vec
 #[derive(PartialEq, Eq, PartialOrd, Clone, Debug)]
 pub enum VecInner {
     Num(u8),
     Vec(Rc<RefCell<Vec<VecInner>>>),
 }
 
+// Struct to perform derive operations on (access to Ordering and cloning)
 #[derive(PartialEq, Eq, PartialOrd, Clone, Debug)]
 pub struct Set(pub Rc<RefCell<Vec<VecInner>>>);
 
+// Parsing method, reads file into Upsets and Downsets
 pub fn parse_buff(buff: String) -> (HashMap<u8, UpDown>, HashMap<u8, HashSet<u8>>) {
+
+    // Declaring of upset/downset and degree list
     let mut map: HashMap<u8, UpDown> = HashMap::new();
     let mut topology_list: HashMap<u8, HashSet<u8>> = HashMap::new();
 
+    // Iterating through file
     for edge in buff.split("\n") {
+
+        // Splitting file into meaningful edges
         let (v1, v2) = parse_edge(edge);
 
+        // Adding to adjacency list
         if let Some(deg) = topology_list.get_mut(&v1) {
             deg.insert(v2);
         } else {
@@ -33,6 +44,7 @@ pub fn parse_buff(buff: String) -> (HashMap<u8, UpDown>, HashMap<u8, HashSet<u8>
             topology_list.insert(v1, deg);
         }
 
+        // Same as above
         if let Some(deg) = topology_list.get_mut(&v2) {
             deg.insert(v1);
         } else {
@@ -41,6 +53,7 @@ pub fn parse_buff(buff: String) -> (HashMap<u8, UpDown>, HashMap<u8, HashSet<u8>
             topology_list.insert(v2, deg);
         }
 
+        // Adding to upset/downsets
         if let Some(adj_list) = map.get_mut(&v1) {
             adj_list.upset.0.borrow_mut().push(VecInner::Num(v2));
         } else {
