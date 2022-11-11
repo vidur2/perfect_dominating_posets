@@ -215,7 +215,7 @@ impl Interval {
 
     fn verify_chain(values: &Vec<HashSet<u8>>) -> bool {
         for val in values {
-            if val.len() != 1 && val.len() < 5 {
+            if val.len() % 2 == 0 {
                 return false;
             }
         }
