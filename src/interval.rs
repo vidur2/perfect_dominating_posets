@@ -172,7 +172,7 @@ impl Interval {
                     if !visited.contains(node) {
                         let vec = deg_vec.get(node).unwrap();
 
-                        if vec.len() > len {
+                        if vec.len() >= len {
                             adjacents = vec.clone();
                             len = vec.len();
                             node_id = node.clone();
@@ -187,14 +187,17 @@ impl Interval {
 
                 for id in adjacents.iter() {
                     visited.insert(*id);
-                    let adj_adj = deg_vec.get(&id).unwrap();
+                    let adj_adj = deg_vec.get(&id).unwrap().clone();
 
-                    for id in adj_adj {
+                    for id in adj_adj.iter() {
                         visited.insert(*id);
                     }
 
                     for val in deg_vec.values_mut() {
                         val.remove(id);
+                        for id in adj_adj.iter() {
+                            val.remove(id);
+                        }
                     }
                 }
 
