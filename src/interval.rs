@@ -20,6 +20,7 @@ struct UnsharedSet(Vec<u8>);
 impl UnsharedSet {
     fn from_set(set: Set) -> Self {
         let mut new_set: Vec<u8> = Vec::new();
+        
         for elem in set.0.borrow().iter() {
             Self::inner(&mut new_set, elem);
         }
@@ -31,7 +32,7 @@ impl UnsharedSet {
         match elem {
             VecInner::Num(num) => new_set.push(*num),
             VecInner::Vec(deepset) => {
-                for elem in deepset.borrow().iter() {
+                for elem in deepset.upgrade().unwrap().borrow().iter() {
                     Self::inner(new_set, elem);
                 }
             }

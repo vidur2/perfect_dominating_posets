@@ -2,24 +2,25 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::rc::Rc;
+use std::rc::Weak;
 
 
 // Stores upsets and downsets
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UpDown {
     pub upset: Set,
     pub downset: Set,
 }
 
 // Insert shared memory into Set Vec
-#[derive(PartialEq, Eq, PartialOrd, Clone, Debug)]
+#[derive(Debug, Clone)]
 pub enum VecInner {
     Num(u8),
-    Vec(Rc<RefCell<Vec<VecInner>>>),
+    Vec(Weak<RefCell<Vec<VecInner>>>),
 }
 
 // Struct to perform derive operations on (access to Ordering and cloning)
-#[derive(PartialEq, Eq, PartialOrd, Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct Set(pub Rc<RefCell<Vec<VecInner>>>);
 
 // Parsing method, reads file into Upsets and Downsets
@@ -70,14 +71,14 @@ pub fn parse_buff(buff: String) -> (HashMap<u8, UpDown>, HashMap<u8, HashSet<u8>
         if let Some(adj_list) = map.get_mut(&v2) {
             let mut borrow = adj_list.downset.0.borrow_mut();
             borrow.push(VecInner::Num(v1));
-            borrow.push(VecInner::Vec(new_item2));
+            borrow.push(VecInner::Vec(Rc::downgrade(&new_item2)));
         } else {
             map.insert(
                 v2,
                 UpDown {
                     downset: Set(Rc::new(RefCell::new(vec![
                         VecInner::Num(v1),
-                        VecInner::Vec(new_item2),
+                        VecInner::Vec(Rc::downgrade(&new_item2)),
                     ]))),
                     upset: Set(Rc::new(RefCell::new(Vec::new()))),
                 },
@@ -87,7 +88,7 @@ pub fn parse_buff(buff: String) -> (HashMap<u8, UpDown>, HashMap<u8, HashSet<u8>
         let new_item = Rc::clone(&map.get(&v2).unwrap().upset.0);
         let mut downlist = map.get_mut(&v1).unwrap().upset.0.borrow_mut();
 
-        downlist.push(VecInner::Vec(new_item));
+        downlist.push(VecInner::Vec(Rc::downgrade(&new_item)));
     }
 
     return (map, topology_list);
