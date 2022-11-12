@@ -147,15 +147,13 @@ impl Interval {
         let coloring = self.color();
         let mut values: Vec<HashSet<u8>> = Vec::new();
         let mut deg_vec = deg_vec.clone();
+        let orig = deg_vec.clone();
         let mut visited: HashSet<u8> = HashSet::new();
 
         for val in coloring.values() {
             values.push(val.clone());
         }
 
-        if !Self::verify_chain(&values) {
-            return Err(ColoringError::OutsideAlgoScope);
-        }
         let mut dominating_set: Vec<u8> = Vec::new();
 
         values.sort_by(|a, b| b.len().cmp(&a.len()));
@@ -167,7 +165,6 @@ impl Interval {
                 let mut len = 0;
                 let mut adjacents: HashSet<u8> = HashSet::new();
                 let mut node_id = u8::MAX;
-
                 for node in val.iter() {
                     if !visited.contains(node) {
                         let vec = deg_vec.get(node).unwrap();
@@ -204,7 +201,9 @@ impl Interval {
                 deg_vec.remove(&node_id);
             }
         }
-
+        if !Self::check_if_dominating(&dominating_set, orig) {
+            return Err(ColoringError::OutsideAlgoScope);
+        }
         return Ok(dominating_set);
     }
 
@@ -225,5 +224,17 @@ impl Interval {
         }
 
         return true;
+    }
+
+    fn check_if_dominating(dset: &Vec<u8>, deg_vec: HashMap<u8, HashSet<u8>>) -> bool {
+        let mut dominated: HashSet<u8> = HashSet::new();
+        for elem in dset.iter() {
+            let neighbors = deg_vec.get(elem).unwrap();
+            for neighbor in neighbors.iter() {
+                dominated.insert(*neighbor);
+            }
+            dominated.insert(*elem);
+        }
+        return deg_vec.keys().len() == dominated.len()
     }
 }
